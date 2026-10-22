@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    container_name: wallet-billing-api
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_DEBUG: "1"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-docker-development-key}
+      SQLITE_PATH: /data/db.sqlite3
+    volumes:
+      - .:/app
+      - wallet_db:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/schema/', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  wallet_db:

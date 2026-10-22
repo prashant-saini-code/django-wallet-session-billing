@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wallet Billing API Playground</title>
+  <style>
+    :root { color-scheme: light; --ink:#17241f; --muted:#65736d; --line:#dce5df; --paper:#f4f7f4; --surface:#fff; --green:#176b4b; --green-soft:#e5f3eb; --blue:#315e9b; --red:#a53232; --red-soft:#fff0ee; --amber:#80551b; --amber-soft:#fff6df; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { padding:28px max(20px,calc((100vw - 1160px)/2)); background:#173f31; color:white; }
+    header h1 { margin:0 0 4px; font-size:25px; letter-spacing:-.02em; }
+    header p { margin:0; color:#d3e4da; }
+    main { max-width:1160px; margin:24px auto 48px; padding:0 20px; }
+    .topline { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:18px; }
+    .topline h2 { margin:0; font-size:19px; }
+    .active-role { display:flex; align-items:center; gap:8px; color:var(--muted); }
+    .layout { display:grid; grid-template-columns:minmax(260px,.85fr) minmax(0,1.4fr); gap:16px; align-items:start; }
+    .stack { display:grid; gap:16px; }
+    .panel { padding:18px; background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:0 2px 8px #173f310a; }
+    .panel h3 { margin:0 0 12px; font-size:16px; }
+    .panel p.hint { margin:-5px 0 14px; color:var(--muted); font-size:13px; }
+    .role-box { padding:12px; border:1px solid var(--line); border-radius:9px; margin:10px 0; }
+    .role-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+    .role-head strong { font-size:14px; }
+    .role-status { color:var(--muted); font-size:12px; }
+    label { display:block; margin:9px 0 4px; color:#47554f; font-size:12px; font-weight:600; }
+    input,select { width:100%; padding:9px 10px; border:1px solid #cad6ce; border-radius:7px; background:white; color:var(--ink); font:inherit; font-size:14px; }
+    input:focus,select:focus { outline:2px solid #91c6a9; outline-offset:1px; }
+    .row { display:flex; gap:8px; align-items:end; }
+    .row > * { flex:1; min-width:0; }
+    button { border:0; border-radius:7px; padding:9px 12px; font:inherit; font-size:13px; font-weight:600; line-height:1.3; cursor:pointer; }
+    .btn { background:#edf2ee; color:#23352b; }
+    .btn:hover { background:#e0e9e2; }
+    .primary { background:var(--green); color:white; }
+    .primary:hover { background:#10583d; }
+    .secondary { background:#edf2f8; color:var(--blue); }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .btnrow { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .account { padding:10px 12px; background:#f2f6f3; border-radius:8px; color:#33453b; font-size:13px; }
+    .metrics { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+    .metric { padding:10px; background:#f3f7f4; border-radius:8px; }
+    .metric span { display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+    .metric strong { display:block; margin-top:3px; font-size:16px; }
+    .flow { display:grid; gap:10px; margin-top:12px; }
+    .flow-step { display:grid; grid-template-columns:30px 1fr; gap:10px; align-items:start; }
+    .dot { display:grid; place-items:center; width:26px; height:26px; border-radius:50%; border:1px solid var(--line); color:var(--muted); font-size:12px; font-weight:700; }
+    .flow-step.done .dot { background:var(--green-soft); color:var(--green); border-color:#c4e3d0; }
+    .flow-step.current .dot { background:var(--green); color:white; border-color:var(--green); }
+    .flow-step strong { display:block; padding-top:2px; font-size:13px; }
+    .flow-step small { display:block; color:var(--muted); font-size:11px; }
+    .actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .notice { display:none; padding:10px 12px; margin-bottom:14px; border-radius:8px; font-size:13px; }
+    .notice.show { display:block; }
+    .notice.ok { background:var(--green-soft); color:var(--green); }
+    .notice.err { background:var(--red-soft); color:var(--red); }
+    .notice.info { background:var(--amber-soft); color:var(--amber); }
+    #log { max-height:260px; overflow:auto; display:grid; gap:8px; }
+    .log-entry { padding:9px 10px; border-left:3px solid #9bb4a4; background:#f7f9f7; border-radius:0 7px 7px 0; font-size:12px; }
+    .log-entry strong { display:block; margin-bottom:3px; }
+    .log-entry pre { margin:4px 0 0; white-space:pre-wrap; overflow-wrap:anywhere; color:#52635a; font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .empty { color:var(--muted); font-size:13px; }
+    .danger { color:var(--red); }
+    .endpoint { color:#53685b; font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    @media(max-width:760px) { .layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))} header{padding:22px 20px} }
+    @media(max-width:430px) { .topline{align-items:flex-start;flex-direction:column}.row{align-items:stretch;flex-direction:column}.metrics{grid-template-columns:1fr 1fr}.panel{padding:14px} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Wallet Billing API Playground</h1>
+    <p>Try the real recharge, provider, session, and billing APIs step by step.</p>
+  </header>
+  <main>
+    <div class="topline">
+      <h2>Consultation flow</h2>
+      <label class="active-role" for="active-role">Acting as
+        <select id="active-role" aria-label="Active role" style="width:auto;min-width:135px">
+          <option value="USER">Customer</option>
+          <option value="PROVIDER">Provider</option>
+        </select>
+      </label>
+    </div>
+    <div id="notice" class="notice" role="status" aria-live="polite"></div>
+    <div class="layout">
+      <div class="stack">
+        <section class="panel">
+          <h3>1. Sign in or create test accounts</h3>
+          <p class="hint">Tokens stay in this browser tab. Create a customer and a provider, or sign in with existing accounts.</p>
+          <div class="role-box">
+            <div class="role-head"><strong>Customer account</strong><span class="role-status" id="user-status">Not signed in</span></div>
+            <label for="user-name">Username</label><input id="user-name" autocomplete="username" placeholder="customer1">
+            <label for="user-password">Password</label><input id="user-password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+            <div class="btnrow"><button class="btn" data-register="USER">Create customer</button><button class="primary" data-login="USER">Sign in</button></div>
+          </div>
+          <div class="role-box">
+            <div class="role-head"><strong>Provider account</strong><span class="role-status" id="provider-status">Not signed in</span></div>
+            <label for="provider-name">Username</label><input id="provider-name" autocomplete="username" placeholder="provider1">
+            <label for="provider-password">Password</label><input id="provider-password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+            <div class="btnrow"><button class="btn" data-register="PROVIDER">Create provider</button><button class="primary" data-login="PROVIDER">Sign in</button></div>
+          </div>
+          <div class="account" id="active-account">Sign in as a customer to begin.</div>
+        </section>
+
+        <section class="panel">
+          <h3>2. Wallet and mock recharge</h3>
+          <div class="metrics">
+            <div class="metric"><span>Balance</span><strong id="wallet-balance">—</strong></div>
+            <div class="metric"><span>Pending reference</span><strong id="pending-reference" style="font-size:12px">—</strong></div>
+            <div class="metric"><span>Recharge status</span><strong id="recharge-status" style="font-size:13px">—</strong></div>
+          </div>
+          <label for="recharge-amount">Recharge amount (₹)</label>
+          <div class="row"><input id="recharge-amount" type="number" min="0.01" step="0.01" value="500.00"><button class="primary" id="recharge-button">Request recharge</button></div>
+          <div class="btnrow">
+            <button class="btn" id="success-callback">Mock success callback</button>
+            <button class="btn" id="failed-callback">Mock failed callback</button>
+            <button class="btn" id="refresh-wallet">Refresh wallet</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="panel">
+          <h3>3. Session actions</h3>
+          <p class="hint">Switch to the provider to accept. Switch back to the customer to start, bill, and end.</p>
+          <div class="row">
+            <div><label for="provider-select">Provider</label><select id="provider-select"><option value="">Load providers after sign in</option></select></div>
+            <div><label for="session-cost">Price per minute (₹)</label><input id="session-cost" type="number" min="0.01" step="0.01" value="50.00"></div>
+          </div>
+          <div class="btnrow"><button class="primary" id="create-session">Create session</button><button class="btn" id="refresh-sessions">Refresh sessions</button></div>
+          <label for="session-select">Your session</label>
+          <select id="session-select"><option value="">No session loaded</option></select>
+          <div class="metrics">
+            <div class="metric"><span>State</span><strong id="session-state" style="font-size:13px">—</strong></div>
+            <div class="metric"><span>Billed</span><strong id="billed-minutes">0 min</strong></div>
+            <div class="metric"><span>Charged</span><strong id="billed-amount">₹0.00</strong></div>
+          </div>
+          <div class="row">
+            <div><label for="bill-minutes">Bill through minute</label><input id="bill-minutes" type="number" min="0" step="1" value="1"></div>
+            <div class="endpoint" id="start-rule">Starting requires 5 × price in the wallet.</div>
+          </div>
+          <div class="actions">
+            <button class="btn" id="assign-session">Assign provider</button>
+            <button class="btn" id="accept-session">Provider accepts</button>
+            <button class="primary" id="start-session">Start session</button>
+            <button class="btn" id="bill-session">Bill elapsed minutes</button>
+            <button class="btn" id="bill-next-minute">Charge next minute</button>
+            <button class="btn" id="end-session">End session</button>
+            <button class="btn danger" id="cancel-session">Cancel session</button>
+          </div>
+          <div class="flow" id="flow-progress" aria-label="Session lifecycle"></div>
+        </section>
+
+        <section class="panel">
+          <h3>API activity</h3>
+          <div id="log" aria-live="polite"><p class="empty">Requests and responses will appear here.</p></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const state = {
+        tokens: JSON.parse(sessionStorage.getItem("billing-demo-tokens") || "{}"),
+        names: JSON.parse(sessionStorage.getItem("billing-demo-names") || "{}"),
+        activeRole: sessionStorage.getItem("billing-demo-role") || "USER",
+        rechargeReference: sessionStorage.getItem("billing-demo-recharge") || "",
+        sessions: [],
+        selectedSession: null,
+        providers: []
+      };
+      const $ = (id) => document.getElementById(id);
+      const logRoot = $("log");
+      const notice = $("notice");
+      const roles = { USER: "Customer", PROVIDER: "Provider" };
+
+      function persist() {
+        sessionStorage.setItem("billing-demo-tokens", JSON.stringify(state.tokens));
+        sessionStorage.setItem("billing-demo-names", JSON.stringify(state.names));
+        sessionStorage.setItem("billing-demo-role", state.activeRole);
+        sessionStorage.setItem("billing-demo-recharge", state.rechargeReference);
+      }
+      function show(message, type = "ok") {
+        notice.textContent = message;
+        notice.className = `notice show ${type}`;
+      }
+      function errorText(data) {
+        if (typeof data === "string") return data;
+        if (data && typeof data === "object") return Object.entries(data).map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : typeof value === "object" ? JSON.stringify(value) : value}`).join(" · ");
+        return "Request failed";
+      }
+      function redact(value) {
+        if (Array.isArray(value)) return value.map(redact);
+        if (value && typeof value === "object") {
+          return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+            key,
+            /password|token|authorization/i.test(key) ? "[hidden]" : redact(item)
+          ]));
+        }
+        return value;
+      }
+      function addLog(method, path, request, response, ok) {
+        const empty = logRoot.querySelector(".empty");
+        if (empty) empty.remove();
+        const row = document.createElement("div");
+        row.className = "log-entry";
+        const title = document.createElement("strong");
+        title.textContent = `${ok ? "✓" : "×"} ${method} ${path}`;
+        const result = document.createElement("pre");
+        result.textContent = JSON.stringify(redact(response), null, 2);
+        row.append(title, result);
+        if (request) {
+          const sent = document.createElement("pre");
+          sent.textContent = `Request: ${JSON.stringify(redact(request))}`;
+          row.insertBefore(sent, result);
+        }
+        logRoot.prepend(row);
+      }
+      async function api(path, { method = "GET", body, auth = true } = {}) {
+        const headers = { "Content-Type": "application/json" };
+        if (auth && state.tokens[state.activeRole]) headers.Authorization = `Token ${state.tokens[state.activeRole]}`;
+        let response;
+        try {
+          response = await fetch(path, { method, headers, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+        } catch (error) {
+          addLog(method, path, body, { error: "Could not connect to Django. Is the server running?" }, false);
+          throw error;
+        }
+        const text = await response.text();
+        let data;
+        try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+        addLog(method, path, body, { status: response.status, data }, response.ok);
+        if (!response.ok) throw new Error(`${response.status}: ${errorText(data)}`);
+        return data;
+      }
+      function roleInputs(role) {
+        return role === "USER"
+          ? { username: $("user-name").value.trim(), password: $("user-password").value }
+          : { username: $("provider-name").value.trim(), password: $("provider-password").value };
+      }
+      function updateAuthUI() {
+        $("active-role").value = state.activeRole;
+        for (const role of ["USER", "PROVIDER"]) {
+          const key = role === "USER" ? "user-status" : "provider-status";
+          $(key).textContent = state.tokens[role] ? `Signed in · ${state.names[role] || roles[role]}` : "Not signed in";
+        }
+        $("active-account").textContent = state.tokens[state.activeRole]
+          ? `Active: ${roles[state.activeRole]} ${state.names[state.activeRole] || ""} · token ready`
+          : `No ${roles[state.activeRole].toLowerCase()} token yet. Sign in or create an account above.`;
+      }
+      async function accountAction(role, register) {
+        const creds = roleInputs(role);
+        if (!creds.username || !creds.password) return show("Enter both username and password.", "err");
+        try {
+          if (register) {
+            const data = await api("/api/auth/register/", { method: "POST", auth: false, body: { ...creds, role } });
+            state.tokens[role] = data.token;
+            state.names[role] = data.username;
+          } else {
+            const data = await api("/api/auth/login/", { method: "POST", auth: false, body: creds });
+            if (data.role !== role) throw new Error(`This account is ${data.role}; choose the matching role before signing in.`);
+            state.tokens[role] = data.token;
+            state.names[role] = data.username;
+          }
+          state.activeRole = role;
+          persist(); updateAuthUI(); show(`${roles[role]} signed in successfully.`);
+          await refreshAll();
+        } catch (error) { show(error.message, "err"); }
+      }
+      async function refreshWallet() {
+        const data = await api("/api/wallet/");
+        $("wallet-balance").textContent = `₹${data.balance}`;
+        return data;
+      }
+      async function loadProviders() {
+        const data = await api("/api/auth/providers/");
+        state.providers = data;
+        const select = $("provider-select");
+        const selected = select.value;
+        select.innerHTML = '<option value="">Choose provider</option>';
+        data.forEach((provider) => {
+          const option = document.createElement("option");
+          option.value = provider.id;
+          option.textContent = `${provider.username} (ID ${provider.id})`;
+          select.append(option);
+        });
+        if (selected) select.value = selected;
+      }
+      function renderSession(session) {
+        if (!session) {
+          $("session-state").textContent = "—";
+          $("billed-minutes").textContent = "0 min";
+          $("billed-amount").textContent = "₹0.00";
+          $("flow-progress").innerHTML = '<p class="empty">Create or load a session to begin.</p>';
+          return;
+        }
+        $("session-state").textContent = session.status;
+        $("billed-minutes").textContent = `${session.billed_minutes} min`;
+        $("billed-amount").textContent = `₹${session.total_billed_amount}`;
+        const states = ["unassigned", "assigned", "accepted_by_provider", "in_progress", "completed"];
+        const index = states.indexOf(session.status);
+        const labels = ["Created", "Provider assigned", "Provider accepted", "In progress", "Completed"];
+        $("flow-progress").innerHTML = labels.map((label, i) => {
+          const statusClass = i < index ? "done" : i === index ? "current" : "";
+          return `<div class="flow-step ${statusClass}"><span class="dot">${i < index ? "✓" : i + 1}</span><div><strong>${label}</strong><small>${states[i]}</small></div></div>`;
+        }).join("");
+        if (session.ended_by === "SYSTEM") show(`System ended this session: ${session.end_reason}.`, "info");
+      }
+      function setSessionOptions(sessions) {
+        state.sessions = sessions;
+        const select = $("session-select");
+        const previous = state.selectedSession || select.value;
+        select.innerHTML = '<option value="">Choose a session</option>';
+        sessions.forEach((session) => {
+          const option = document.createElement("option");
+          option.value = session.id;
+          option.textContent = `#${session.id} · ${session.status} · ₹${session.per_minute_cost}/min`;
+          select.append(option);
+        });
+        if (previous && sessions.some((session) => String(session.id) === String(previous))) select.value = previous;
+        state.selectedSession = select.value || null;
+        renderSession(sessions.find((session) => String(session.id) === String(select.value)));
+      }
+      async function refreshSessions() {
+        const sessions = await api("/api/sessions/");
+        setSessionOptions(sessions);
+      }
+      async function refreshAll() {
+        if (!state.tokens[state.activeRole]) return;
+        try {
+          await Promise.all([refreshWallet(), refreshSessions(), loadProviders()]);
+        } catch (error) { show(error.message, "err"); }
+      }
+      async function runAction(label, action) {
+        if (!state.tokens[state.activeRole]) return show("Sign in first.", "err");
+        try {
+          await action();
+          await refreshAll();
+          const selected = state.sessions.find((session) => String(session.id) === String(state.selectedSession));
+          if (selected?.ended_by === "SYSTEM") show(`System ended this session: ${selected.end_reason}.`, "info");
+          else show(label);
+        }
+        catch (error) { show(error.message, "err"); }
+      }
+      function sessionId() {
+        const id = $("session-select").value;
+        if (!id) throw new Error("Create or choose a session first.");
+        return id;
+      }
+
+      document.querySelectorAll("[data-register]").forEach((button) => button.addEventListener("click", () => accountAction(button.dataset.register, true)));
+      document.querySelectorAll("[data-login]").forEach((button) => button.addEventListener("click", () => accountAction(button.dataset.login, false)));
+      $("active-role").addEventListener("change", async (event) => {
+        state.activeRole = event.target.value; persist(); updateAuthUI(); await refreshAll();
+      });
+      $("recharge-button").addEventListener("click", () => runAction("Recharge started. Use a mock callback to complete it.", async () => {
+        const data = await api("/api/wallet/recharge/", { method: "POST", body: { amount: $("recharge-amount").value } });
+        state.rechargeReference = data.reference; persist();
+        $("pending-reference").textContent = data.reference;
+        $("recharge-status").textContent = data.status;
+      }));
+      async function callback(status) {
+        if (!state.rechargeReference) return show("Request a recharge first.", "err");
+        try {
+          const data = await api("/api/wallet/recharge/callback/", { method: "POST", auth: false, body: { reference: state.rechargeReference, status } });
+          $("recharge-status").textContent = data.transaction.status;
+          await refreshWallet();
+          show(data.message, status === "success" ? "ok" : "info");
+        } catch (error) { show(error.message, "err"); }
+      }
+      $("success-callback").addEventListener("click", () => callback("success"));
+      $("failed-callback").addEventListener("click", () => callback("failed"));
+      $("refresh-wallet").addEventListener("click", () => runAction("Wallet refreshed.", refreshWallet));
+      $("create-session").addEventListener("click", () => runAction("Session created.", async () => {
+        const body = { per_minute_cost: $("session-cost").value };
+        if ($("provider-select").value) body.provider_id = Number($("provider-select").value);
+        const session = await api("/api/sessions/", { method: "POST", body });
+        state.selectedSession = session.id;
+      }));
+      $("refresh-sessions").addEventListener("click", () => runAction("Sessions refreshed.", refreshSessions));
+      $("session-select").addEventListener("change", (event) => {
+        state.selectedSession = event.target.value;
+        renderSession(state.sessions.find((session) => String(session.id) === String(event.target.value)));
+      });
+      $("assign-session").addEventListener("click", () => runAction("Provider assigned.", async () => {
+        const provider = $("provider-select").value;
+        if (!provider) throw new Error("Choose a provider first.");
+        await api(`/api/sessions/${sessionId()}/assign/`, { method: "POST", body: { provider_id: Number(provider) } });
+      }));
+      for (const [buttonId, endpoint, message] of [
+        ["accept-session", "accept", "Provider accepted the session."],
+        ["start-session", "start", "Session started."],
+        ["end-session", "end", "Session ended."],
+        ["cancel-session", "cancel", "Session cancelled."]
+      ]) {
+        $(buttonId).addEventListener("click", () => runAction(message, async () => {
+          await api(`/api/sessions/${sessionId()}/${endpoint}/`, { method: "POST", body: {} });
+        }));
+      }
+      $("bill-session").addEventListener("click", () => runAction("Billing request completed.", async () => {
+        const value = $("bill-minutes").value;
+        const body = value === "" ? {} : { minutes: Number(value) };
+        await api(`/api/sessions/${sessionId()}/bill/`, { method: "POST", body });
+      }));
+      $("bill-next-minute").addEventListener("click", () => runAction("Next minute billed.", async () => {
+        const id = sessionId();
+        const session = state.sessions.find((item) => String(item.id) === String(id));
+        const nextMinute = Number(session?.billed_minutes || 0) + 1;
+        $("bill-minutes").value = nextMinute;
+        await api(`/api/sessions/${id}/bill/`, { method: "POST", body: { minutes: nextMinute } });
+      }));
+
+      updateAuthUI();
+      if (state.rechargeReference) $("pending-reference").textContent = state.rechargeReference;
+      refreshAll();
+    })();
+  </script>
+</body>
+</html>
